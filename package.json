@@ -1,16 +1,16 @@
 {
   "name": "automation-command-center",
-  "version": "1.0.0",
-  "description": "Android Automation Command Center with Electron & Socket.IO",
-  "main": "main.js",
+  "version": "1.1.0",
+  "type": "module",
+  "main": "server.js",
   "scripts": {
-    "start": "electron ."
+    "start": "node server.js"
   },
   "dependencies": {
-    "electron": "^30.0.0",
-    "express": "^4.19.2",
-    "socket.io": "^4.7.5",
-    "socket.io-client": "^4.7.5",
-    "unzipper": "^0.10.14"
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1",
+    "qrcode": "^1.5.4",
+    "unzipper": "^0.12.3",
+    "node-dns-sd": "^1.0.2"
   }
 }

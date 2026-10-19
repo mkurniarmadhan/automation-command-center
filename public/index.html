@@ -2,108 +2,381 @@
 <html lang="id">
 
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Automation Command Center</title>
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background: #f4f6f8;
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f0f2f5;
+            color: #1a1a1a;
+            padding: 20px;
+            line-height: 1.5;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        h3 {
+            font-size: 1.05rem;
+            margin-bottom: 12px;
         }
 
         .card {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            background: #fff;
+            border-radius: 10px;
+            padding: 18px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 9px 12px;
+            margin: 6px 0 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        button {
+            padding: 8px 16px;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        button.green {
+            background: #16a34a;
+        }
+
+        button.green:hover {
+            background: #15803d;
+        }
+
+        button.gray {
+            background: #6b7280;
+        }
+
+        button.gray:hover {
+            background: #4b5563;
+        }
+
+        button.teal {
+            background: #0d9488;
         }
 
         .badge {
-            background: #28a745;
-            color: white;
-            padding: 3px 8px;
+            display: inline-block;
+            padding: 2px 8px;
             border-radius: 4px;
             font-size: 12px;
+            color: #fff;
+            background: #16a34a;
+        }
+
+        .badge.wireless {
+            background: #0d9488;
         }
 
         #logs {
-            background: #1e1e1e;
-            color: #00ff00;
-            padding: 10px;
-            height: 150px;
+            background: #111;
+            color: #4ade80;
+            padding: 12px;
+            height: 160px;
             overflow-y: auto;
-            font-family: monospace;
-            border-radius: 4px;
+            font-family: ui-monospace, monospace;
+            font-size: 13px;
+            border-radius: 6px;
+        }
+
+        #console {
+            background: #0d1117;
+            color: #58a6ff;
+            padding: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: ui-monospace, monospace;
+            font-size: 13px;
+            border-radius: 6px;
+            white-space: pre-wrap;
+        }
+
+        #qr-image {
+            display: none;
+            width: 220px;
+            margin: 12px auto 0;
+            border: 1px solid #ddd;
+            padding: 8px;
+            background: #fff;
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .status {
+            font-size: 13px;
+            color: #555;
+            margin-top: 8px;
         }
     </style>
 </head>
 
 <body>
-    <h2>Automation Command Center</h2>
+    <h1>Automation Command Center</h1>
 
     <div class="card">
-        <h3>Status Jaringan WiFi Saat Ini</h3>
-        <p>Interface: <b id="wifi-interface">-</b> | IP Lokal: <b id="wifi-ip">-</b></p>
+        <h3>Jaringan</h3>
+        <p>Interface: <b id="wifi-name">-</b> · IP: <b id="wifi-ip">-</b></p>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h3>mDNS Discovery</h3>
+            <button class="teal" onclick="discover()">Discover mDNS</button>
+            <div id="mdns-status" class="status"></div>
+            <ul id="mdns-list"></ul>
+        </div>
+
+        <div class="card">
+            <h3>Port Scan</h3>
+            <button class="green" onclick="scan()">Scan ADB Ports</button>
+            <div id="scan-status" class="status"></div>
+            <ul id="scan-list"></ul>
+        </div>
+    </div>
+
+    <div class="card" style="text-align:center">
+        <h3>Pair via QR Code (Android 11+)</h3>
+        <p style="font-size:14px;color:#555;margin:8px 0">
+            Buka <b>Developer Options → Wireless debugging → Pair device with QR code</b>
+        </p>
+        <button onclick="generateQR()">Tampilkan QR</button>
+        <img id="qr-image" alt="QR Code" />
+        <p id="qr-info" style="margin-top:8px;font-weight:600;color:#2563eb"></p>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h3>Manual Pair</h3>
+            <input id="pair-ip" placeholder="IP Address" />
+            <input id="pair-port" placeholder="Pairing Port" />
+            <input id="pair-code" placeholder="6-digit PIN" />
+            <button onclick="pair()">Pair</button>
+        </div>
+
+        <div class="card">
+            <h3>Manual Connect</h3>
+            <input id="connect-ip" placeholder="IP Address" />
+            <input id="connect-port" placeholder="Connect Port" />
+            <button class="green" onclick="connect()">Connect</button>
+        </div>
     </div>
 
     <div class="card">
-        <h3>Auto Connect Wireless ADB</h3>
-        <input type="text" id="target-ip" placeholder="IP Address (misal: 192.168.31.86)">
-        <input type="text" id="target-port" placeholder="Port (misal: 44201)">
-        <button onclick="connectWireless()">Connect Device</button>
-    </div>
-
-    <div class="card">
-        <h3>Daftar Perangkat Terhubung (<span id="device-count">0</span>)</h3>
-        <button onclick="refreshDevices()">Refresh List</button>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+            <h3>Devices (<span id="device-count">0</span>)</h3>
+            <button class="gray" onclick="refresh()">Refresh</button>
+        </div>
         <ul id="device-list"></ul>
     </div>
 
     <div class="card">
-        <h3>System Logs</h3>
+        <h3>ADB Command</h3>
+        <select id="device-select">
+            <option value="">Auto / Default</option>
+        </select>
+        <div class="row">
+            <button class="gray" onclick="run('get-state')">State</button>
+            <button class="gray" onclick="run('shell getprop ro.product.model')">Model</button>
+            <button class="gray" onclick="run('shell getprop ro.build.version.release')">Android</button>
+            <button class="gray" onclick="run('shell wm size')">Resolution</button>
+            <button class="gray" onclick="run('shell dumpsys battery')">Battery</button>
+        </div>
+        <div class="row">
+            <input id="custom-cmd" placeholder="Custom command (contoh: shell pm list packages -3)"
+                style="flex:1;margin:0" />
+            <button onclick="runCustom()">Run</button>
+        </div>
+        <h4 style="margin:14px 0 6px">Output</h4>
+        <pre id="console"></pre>
+    </div>
+
+    <div class="card">
+        <h3>Logs</h3>
         <div id="logs"></div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script>
+    <script type="module">
         const socket = io();
 
-        socket.on('log', (msg) => {
-            const logDiv = document.getElementById('logs');
-            logDiv.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
-            logDiv.scrollTop = logDiv.scrollHeight;
+        const $ = id => document.getElementById(id);
+
+        socket.on('log', msg => {
+            const el = $('logs');
+            el.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+            el.scrollTop = el.scrollHeight;
         });
 
-        socket.on('wifi-info', (data) => {
-            document.getElementById('wifi-interface').innerText = data.interfaceName;
-            document.getElementById('wifi-ip').innerText = data.ip;
+        socket.on('wifi-info', data => {
+            $('wifi-name').textContent = data.name;
+            $('wifi-ip').textContent = data.ip;
         });
 
-        socket.on('device-list', (devices) => {
-            document.getElementById('device-count').innerText = devices.length;
-            const ul = document.getElementById('device-list');
-            ul.innerHTML = '';
-            devices.forEach(dev => {
+        socket.on('device-list', devices => {
+            $('device-count').textContent = devices.length;
+            const select = $('device-select');
+            const list = $('device-list');
+            select.innerHTML = '<option value="">Auto / Default</option>';
+            list.innerHTML = '';
+
+            if (!devices.length) {
+                list.innerHTML = '<li><i>Tidak ada perangkat</i></li>';
+                return;
+            }
+
+            devices.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d.id;
+                opt.textContent = `${d.id} (${d.type})`;
+                select.appendChild(opt);
+
                 const li = document.createElement('li');
-                li.innerHTML = `<b>${dev.id}</b> - Tipe: <span class="badge">${dev.type}</span> Status: ${dev.status}`;
+                li.innerHTML = `<b>${d.id}</b> <span class="badge ${d.type === 'WIRELESS' ? 'wireless' : ''}">${d.type}</span>`;
+                list.appendChild(li);
+            });
+        });
+
+        socket.on('mdns-results', results => {
+            $('mdns-status').textContent = `Ditemukan: ${results.length}`;
+            const ul = $('mdns-list');
+            ul.innerHTML = '';
+            if (!results.length) {
+                ul.innerHTML = '<li><i>Tidak ditemukan</i></li>';
+                return;
+            }
+            results.forEach(r => {
+                const li = document.createElement('li');
+                const btn = r.type === 'PAIRING'
+                    ? `<button onclick="fillPair('${r.ip}','${r.port}')" style="padding:3px 8px;font-size:12px">Pair</button>`
+                    : `<button class="green" onclick="fillConnect('${r.ip}','${r.port}')" style="padding:3px 8px;font-size:12px">Connect</button>`;
+                li.innerHTML = `<b>${r.ip}:${r.port}</b> (${r.type}) ${btn}`;
                 ul.appendChild(li);
             });
         });
 
-        function connectWireless() {
-            const ip = document.getElementById('target-ip').value;
-            const port = document.getElementById('target-port').value;
-            if (ip && port) {
-                socket.emit('connect-wireless', { ip, port });
-            } else {
-                alert('Isi IP dan Port terlebih dahulu!');
-            }
-        }
+        socket.on('scan-results', results => {
+            $('scan-status').textContent = `Ditemukan: ${results.length}`;
+            const ul = $('scan-list');
+            ul.innerHTML = '';
+            results.forEach(r => {
+                const li = document.createElement('li');
+                li.innerHTML = `<b>${r.ip}:${r.port}</b>
+          <button class="green" onclick="fillConnect('${r.ip}','${r.port}')" style="padding:3px 8px;font-size:12px">Connect</button>
+          <button onclick="fillPair('${r.ip}','${r.port}')" style="padding:3px 8px;font-size:12px">Pair</button>`;
+                ul.appendChild(li);
+            });
+        });
 
-        function refreshDevices() {
-            socket.emit('refresh-devices');
-        }
+        socket.on('qr-generated', data => {
+            const img = $('qr-image');
+            img.src = data.qr;
+            img.style.display = 'block';
+            $('qr-info').textContent = `IP: ${data.ip} · PIN: ${data.pin}`;
+        });
+
+        socket.on('command-result', data => {
+            const el = $('console');
+            el.textContent += `\n$ ${data.command}\n${data.output}\n------------------------------`;
+            el.scrollTop = el.scrollHeight;
+        });
+
+        // Actions
+        window.generateQR = () => socket.emit('generate-qr');
+        window.discover = () => {
+            $('mdns-status').textContent = 'Mencari...';
+            $('mdns-list').innerHTML = '';
+            socket.emit('discover-mdns');
+        };
+        window.scan = () => {
+            $('scan-status').textContent = 'Scanning...';
+            $('scan-list').innerHTML = '';
+            socket.emit('scan-ports');
+        };
+        window.pair = () => {
+            const ip = $('pair-ip').value.trim();
+            const port = $('pair-port').value.trim();
+            const code = $('pair-code').value.trim();
+            if (ip && port && code) socket.emit('pair', { ip, port, code });
+        };
+        window.connect = () => {
+            const ip = $('connect-ip').value.trim();
+            const port = $('connect-port').value.trim();
+            if (ip && port) socket.emit('connect-device', { ip, port });
+        };
+        window.refresh = () => socket.emit('refresh-devices');
+        window.run = (cmd) => {
+            const deviceId = $('device-select').value;
+            socket.emit('run-command', { deviceId, command: cmd });
+        };
+        window.runCustom = () => {
+            const cmd = $('custom-cmd').value.trim();
+            if (cmd) {
+                run(cmd);
+                $('custom-cmd').value = '';
+            }
+        };
+        window.fillPair = (ip, port) => {
+            $('pair-ip').value = ip;
+            $('pair-port').value = port;
+        };
+        window.fillConnect = (ip, port) => {
+            $('connect-ip').value = ip;
+            $('connect-port').value = port;
+        };
     </script>
 </body>
 
